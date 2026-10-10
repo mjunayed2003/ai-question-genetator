@@ -11,7 +11,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     const connectionString = process.env.DATABASE_URL || '';
-    const pool = new pg.Pool({ connectionString });
+    const pool = new pg.Pool({
+      connectionString: connectionString || undefined,
+      connectionTimeoutMillis: 3000,
+    });
     const adapter = new PrismaPg(pool);
 
     super({
@@ -23,15 +26,27 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
+    if (!process.env.DATABASE_URL) {
+      this.isConnected = false;
+      this.logger.warn(
+        'DATABASE_URL environment variable is missing. Database operations will not be available until configured.',
+      );
+      return;
+    }
+
     try {
-      await this.$connect();
+      await Promise.race([
+        this.$connect(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('PostgreSQL connection timed out after 3000ms')), 3000),
+        ),
+      ]);
       this.isConnected = true;
       this.logger.log('Successfully connected to Supabase PostgreSQL database via Prisma 7');
     } catch (error) {
       this.isConnected = false;
       this.logger.warn(
-        `Failed to connect to PostgreSQL database: ${(error as Error).message}. ` +
-        `Database features will require PostgreSQL to be running at ${process.env.DATABASE_URL}`,
+        `Failed to connect to PostgreSQL database: ${(error as Error).message}.`,
       );
     }
   }

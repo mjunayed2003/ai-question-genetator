@@ -50,6 +50,12 @@ async function bootstrap() {
 
 export default async function handler(req: any, res: any) {
   try {
+    // If request URL was rewritten by Vercel to /api, restore the original path if available
+    const originalPath = req.headers['x-matched-path'] || req.headers['x-invoke-path'];
+    if (originalPath && originalPath !== '/api' && originalPath !== '/api/index') {
+      req.url = originalPath;
+    }
+
     if (!server) {
       server = await bootstrap();
     }
@@ -63,6 +69,7 @@ export default async function handler(req: any, res: any) {
         statusCode: 500,
         message: 'Internal serverless function initialization error',
         error: err?.message || String(err),
+        stack: err?.stack || undefined,
       }),
     );
   }
