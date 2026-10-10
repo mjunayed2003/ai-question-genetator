@@ -6,8 +6,12 @@ import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 
-// Load .env natively
-process.loadEnvFile();
+// Load .env natively if present on disk
+try {
+  process.loadEnvFile();
+} catch {
+  // Ignored in cloud environments (Vercel, Docker, etc.) where env vars are injected directly
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');

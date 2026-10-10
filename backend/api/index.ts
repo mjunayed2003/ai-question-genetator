@@ -1,12 +1,25 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module.js';
 import { ValidationPipe } from '@nestjs/common';
-import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter.js';
-import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor.js';
 
 let server: any;
 
 async function bootstrap() {
+  let AppModule: any;
+  let AllExceptionsFilter: any;
+  let TransformInterceptor: any;
+
+  try {
+    const appMod = await import('../dist/app.module.js');
+    AppModule = appMod.AppModule;
+    AllExceptionsFilter = (await import('../dist/common/filters/all-exceptions.filter.js')).AllExceptionsFilter;
+    TransformInterceptor = (await import('../dist/common/interceptors/transform.interceptor.js')).TransformInterceptor;
+  } catch {
+    const appMod = await import('../src/app.module.js');
+    AppModule = appMod.AppModule;
+    AllExceptionsFilter = (await import('../src/common/filters/all-exceptions.filter.js')).AllExceptionsFilter;
+    TransformInterceptor = (await import('../src/common/interceptors/transform.interceptor.js')).TransformInterceptor;
+  }
+
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
@@ -24,16 +37,33 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new TransformInterceptor());
+  if (AllExceptionsFilter) {
+    app.useGlobalFilters(new AllExceptionsFilter());
+  }
+  if (TransformInterceptor) {
+    app.useGlobalInterceptors(new TransformInterceptor());
+  }
 
   await app.init();
   return app.getHttpAdapter().getInstance();
 }
 
 export default async function handler(req: any, res: any) {
-  if (!server) {
-    server = await bootstrap();
+  try {
+    if (!server) {
+      server = await bootstrap();
+    }
+    return server(req, res);
+  } catch (err: any) {
+    console.error('Vercel Serverless Invocation Error:', err);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        statusCode: 500,
+        message: 'Internal serverless function initialization error',
+        error: err?.message || String(err),
+      }),
+    );
   }
-  return server(req, res);
 }
