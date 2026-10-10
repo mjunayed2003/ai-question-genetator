@@ -13,6 +13,8 @@ import { UpdateQuestionSetDto } from './dto/update-question-set.dto.js';
 import { UpdateMcqDto } from './dto/update-mcq.dto.js';
 import { UpdateCqDto } from './dto/update-cq.dto.js';
 
+import { DocumentsService } from '../documents/documents.service.js';
+
 @Injectable()
 export class QuestionsService {
   private readonly logger = new Logger(QuestionsService.name);
@@ -20,6 +22,7 @@ export class QuestionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    private readonly documentsService: DocumentsService,
   ) {}
 
   /**
@@ -50,10 +53,29 @@ export class QuestionsService {
       if (document.extractedText && document.extractedText.trim().length > 0) {
         sourceText = document.extractedText;
         documentTitle = document.originalName;
-      } else if (!dto.topic) {
-        throw new BadRequestException(
-          'The selected document has no extracted text. Please provide a topic or upload a readable text PDF.',
-        );
+      } else {
+        // Attempt on-the-fly text extraction if the physical file still exists
+        if (document.filePath && document.mimeType === 'application/pdf') {
+          try {
+            const reExtracted = await this.documentsService.extractTextFromPdf(document.filePath);
+            if (reExtracted && reExtracted.trim().length > 0) {
+              sourceText = reExtracted.trim();
+              documentTitle = document.originalName;
+              await this.prisma.document.update({
+                where: { id: document.id },
+                data: { extractedText: sourceText },
+              });
+            }
+          } catch (reErr) {
+            this.logger.warn(`On-the-fly re-extraction failed: ${(reErr as Error).message}`);
+          }
+        }
+
+        if (!sourceText && !dto.topic) {
+          throw new BadRequestException(
+            'The selected document has no extracted text. Please provide a topic or upload a readable text PDF.',
+          );
+        }
       }
     }
 

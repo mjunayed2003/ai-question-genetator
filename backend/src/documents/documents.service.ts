@@ -111,15 +111,38 @@ export class DocumentsService {
   }
 
   /**
-   * Robust PDF Text Extraction using unpdf
+   * Robust PDF Text Extraction supporting pdf-parse v2 and v1
    */
-  private async extractTextFromPdf(filePath: string): Promise<string> {
+  async extractTextFromPdf(filePath: string): Promise<string> {
     try {
       const buffer = await fs.readFile(filePath);
       const pdfParseModule = await import('pdf-parse');
-      const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
-      const data = await pdfParse(buffer);
-      return data?.text ?? '';
+      const PDFParseTarget =
+        (pdfParseModule as any).PDFParse ??
+        (pdfParseModule as any).default ??
+        pdfParseModule;
+
+      // 1. pdf-parse v2.x (Class based)
+      if (typeof PDFParseTarget === 'function' && PDFParseTarget.prototype?.getText) {
+        const parser = new PDFParseTarget({ data: buffer });
+        try {
+          const result = await parser.getText();
+          const extracted = result?.text?.trim() ?? '';
+          return extracted;
+        } finally {
+          if (typeof parser.destroy === 'function') {
+            await parser.destroy();
+          }
+        }
+      }
+
+      // 2. pdf-parse v1.x (Function based)
+      if (typeof PDFParseTarget === 'function') {
+        const data = await PDFParseTarget(buffer);
+        return data?.text?.trim() ?? '';
+      }
+
+      return '';
     } catch (err) {
       this.logger.warn(`PDF parser warning for ${filePath}: ${(err as Error).message}`);
       return '';
