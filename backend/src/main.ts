@@ -5,28 +5,32 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import helmet from 'helmet';
+import * as helmetModule from 'helmet';
 
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 
+// Support Helmet's CommonJS/ESM export shape.
+const helmetMiddleware =
+  (helmetModule as any).default ?? helmetModule;
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  // Load local .env when available.
+  // Load .env locally if available.
   // Production hosting should inject environment variables.
   try {
     process.loadEnvFile();
   } catch {
-    // Ignore if .env does not exist.
+    // Ignore if .env is unavailable.
   }
 
   const app = await NestFactory.create(AppModule);
 
   // Security headers
   app.use(
-    helmet({
+    helmetMiddleware({
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
     }),
@@ -34,7 +38,9 @@ async function bootstrap() {
 
   // CORS
   const allowedOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim())
+    ? process.env.FRONTEND_URL
+        .split(',')
+        .map((origin) => origin.trim())
     : ['http://localhost:3000'];
 
   app.enableCors({
@@ -63,13 +69,13 @@ async function bootstrap() {
     }),
   );
 
-  // Global exception handling
+  // Global exception filter
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // Global response transformation
+  // Global response interceptor
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Swagger documentation
+  // Swagger configuration
   const swaggerConfig = new DocumentBuilder()
     .setTitle('AI Question Generator API')
     .setDescription(
@@ -106,7 +112,7 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 
   logger.log(`Backend started on port ${port}`);
-  logger.log(`Swagger docs: /api/docs`);
+  logger.log('Swagger docs: /api/docs');
 }
 
 bootstrap().catch((error: unknown) => {
