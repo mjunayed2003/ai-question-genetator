@@ -25,11 +25,15 @@ import {
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import { DocumentsService } from './documents.service.js';
 import { FileUploadDto } from './dto/upload-document.dto.js';
 
-// Ensure uploads folder exists synchronously on module load
-const uploadDir = path.resolve(process.cwd(), 'uploads');
+// Ensure uploads folder exists synchronously on module load (support Vercel read-only filesystem by using /tmp)
+const uploadDir = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'uploads')
+  : path.resolve(process.cwd(), 'uploads');
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
