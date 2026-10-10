@@ -1,0 +1,112 @@
+// Prisma schema for AI Question Generator
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model User {
+  id        String        @id // Firebase UID
+  email     String        @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  documents    Document[]
+  questionSets QuestionSet[]
+
+  @@index([email])
+}
+
+model Document {
+  id            String         @id @default(uuid())
+  userId        String?
+  originalName  String
+  fileName      String
+  filePath      String
+  mimeType      String
+  fileSize      Int
+  status        DocumentStatus @default(UPLOADED)
+  extractedText String?        @db.Text
+  errorMessage  String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  questionSets  QuestionSet[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuestionSet {
+  id          String    @id @default(uuid())
+  userId      String?
+  documentId  String?
+  topic       String?
+  language    String    @default("English")
+  difficulty  String    @default("medium")
+  mcqCount    Int       @default(0)
+  cqCount     Int       @default(0)
+  status      String    @default("GENERATED")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  document    Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  mcqs        MCQ[]
+  cqs         CQ[]
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([createdAt])
+}
+
+model MCQ {
+  id            String      @id @default(uuid())
+  questionSetId String
+  question      String      @db.Text
+  options       Json        // Array of 4 string options
+  answer        String
+  explanation   String      @db.Text
+  difficulty    String
+  order         Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  questionSet   QuestionSet @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+
+  @@index([questionSetId])
+  @@index([order])
+}
+
+model CQ {
+  id            String      @id @default(uuid())
+  questionSetId String
+  stimulus      String      @db.Text
+  questionA     String      @db.Text
+  questionB     String      @db.Text
+  questionC     String      @db.Text
+  questionD     String      @db.Text
+  difficulty    String
+  order         Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  questionSet   QuestionSet @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+
+  @@index([questionSetId])
+  @@index([order])
+}

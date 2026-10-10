@@ -1,0 +1,9 @@
+allowBuilds:
+  '@scarf/scarf': false
+  '@google/genai': true
+  protobufjs: true
+  prisma: true
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  workerd: true
