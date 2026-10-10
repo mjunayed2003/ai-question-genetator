@@ -132,7 +132,7 @@ export const Navbar: React.FC = () => {
             <FiBookOpen size={20} className="brand-icon" />
           </div>
           <div className="brand-text-container">
-            <span className="brand-title">QuestAI</span>
+            <span className="brand-title">ExamGen</span>
             <span className="brand-tag">Studio</span>
           </div>
         </Link>

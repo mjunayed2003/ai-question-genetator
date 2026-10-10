@@ -172,7 +172,7 @@ export const DashboardPage: React.FC = () => {
             <div className="hero-img-card">
               <img
                 src="/hero-study.jpg"
-                alt="QuestAI Study Workspace"
+                alt="ExamGen Study Workspace"
                 loading="lazy"
               />
               <div className="hero-badge-overlay">
