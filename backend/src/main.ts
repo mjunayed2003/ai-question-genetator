@@ -1,39 +1,57 @@
+
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import {
+  Logger,
+  ValidationPipe,
+} from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 
-// Load .env natively if present on disk
-try {
-  process.loadEnvFile();
-} catch {
-  // Ignored in cloud environments (Vercel, Docker, etc.) where env vars are injected directly
-}
-
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  // Load local .env when available.
+  // Production hosting should inject environment variables.
+  try {
+    process.loadEnvFile();
+  } catch {
+    // Ignore if .env does not exist.
+  }
+
   const app = await NestFactory.create(AppModule);
 
-  // 1. Security Headers via Helmet
-  const helmetMiddleware = ((helmet as any)?.default || helmet) as (options?: any) => any;
+  // Security headers
   app.use(
-    helmetMiddleware({
-      contentSecurityPolicy: false, // Allows Swagger UI assets
+    helmet({
+      contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
     }),
   );
 
-  // 2. Enable CORS
+  // CORS
+  const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim())
+    : ['http://localhost:3000'];
+
   app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    origin: allowedOrigins,
+    methods: [
+      'GET',
+      'HEAD',
+      'PUT',
+      'PATCH',
+      'POST',
+      'DELETE',
+      'OPTIONS',
+    ],
     credentials: true,
   });
 
-  // 3. Global Input Validation Pipe
+  // Global validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -45,27 +63,36 @@ async function bootstrap() {
     }),
   );
 
-  // 4. Global Exception Filter
+  // Global exception handling
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // 5. Global Response Transform Interceptor
+  // Global response transformation
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // 6. OpenAPI / Swagger Documentation
+  // Swagger documentation
   const swaggerConfig = new DocumentBuilder()
     .setTitle('AI Question Generator API')
     .setDescription(
-      'Production-grade RESTful API for generating educational Multiple Choice (MCQ) ' +
-      'and Creative (CQ) questions from uploaded documents (PDF, images) or topics using Google Gemini.',
+      'REST API for generating educational MCQ and Creative Questions using Google Gemini.',
     )
     .setVersion('1.0.0')
-    .addTag('Documents', 'Upload, parse, and manage educational PDFs and images')
-    .addTag('Questions Management', 'Generate, retrieve, edit, regenerate, and export question sets')
-    .addTag('AI Question Generation', 'Direct standalone AI question generation endpoints')
+    .addTag('Documents', 'Upload and manage educational documents')
+    .addTag(
+      'Questions Management',
+      'Generate, retrieve, edit, and export questions',
+    )
+    .addTag(
+      'AI Question Generation',
+      'AI-powered question generation endpoints',
+    )
     .build();
 
-  const swaggerDocument = SwaggerModule.createDocument(app as any, swaggerConfig);
-  SwaggerModule.setup('api/docs', app as any, swaggerDocument, {
+  const swaggerDocument = SwaggerModule.createDocument(
+    app,
+    swaggerConfig,
+  );
+
+  SwaggerModule.setup('api/docs', app, swaggerDocument, {
     swaggerOptions: {
       persistAuthorization: true,
       docExpansion: 'list',
@@ -73,14 +100,17 @@ async function bootstrap() {
     },
   });
 
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  // Start server
+  const port = Number(process.env.PORT) || 3000;
 
-  logger.log(`====================================================`);
-  logger.log(`🚀 AI Question Generator Backend successfully started!`);
-  logger.log(`📍 Base API URL:      http://localhost:${port}`);
-  logger.log(`📖 Swagger API Docs:  http://localhost:${port}/api/docs`);
-  logger.log(`====================================================`);
+  await app.listen(port, '0.0.0.0');
+
+  logger.log(`Backend started on port ${port}`);
+  logger.log(`Swagger docs: /api/docs`);
 }
 
-await bootstrap();
+bootstrap().catch((error: unknown) => {
+  const logger = new Logger('Bootstrap');
+  logger.error('Failed to start the application', error);
+  process.exit(1);
+});
