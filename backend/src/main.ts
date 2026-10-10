@@ -14,8 +14,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // 1. Security Headers via Helmet
+  const helmetMiddleware = ((helmet as any)?.default || helmet) as (options?: any) => any;
   app.use(
-    helmet({
+    helmetMiddleware({
       contentSecurityPolicy: false, // Allows Swagger UI assets
       crossOriginEmbedderPolicy: false,
     }),
