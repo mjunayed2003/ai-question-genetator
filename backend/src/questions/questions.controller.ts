@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -48,6 +49,9 @@ export class QuestionsController {
     @Body() dto: GenerateQuestionsDto,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to generate questions.');
+    }
     return this.questionsService.generateAndSave(dto, userId);
   }
 
@@ -70,6 +74,9 @@ export class QuestionsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to view question sets.');
+    }
     return this.questionsService.getQuestionSetById(id, userId);
   }
 
@@ -78,8 +85,12 @@ export class QuestionsController {
   @ApiParam({ name: 'id', description: 'QuestionSet UUID' })
   async exportQuestionSet(
     @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-user-id') userId?: string,
   ) {
-    return this.questionsService.exportQuestionSet(id);
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to export question sets.');
+    }
+    return this.questionsService.exportQuestionSet(id, userId);
   }
 
   @Patch('sets/:id')
@@ -90,6 +101,9 @@ export class QuestionsController {
     @Body() dto: UpdateQuestionSetDto,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
     return this.questionsService.updateQuestionSet(id, dto, userId);
   }
 
@@ -100,6 +114,9 @@ export class QuestionsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
     return this.questionsService.deleteQuestionSet(id, userId);
   }
 
@@ -109,15 +126,25 @@ export class QuestionsController {
   async updateMcq(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateMcqDto,
+    @Headers('x-user-id') userId?: string,
   ) {
-    return this.questionsService.updateMcq(id, dto);
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    return this.questionsService.updateMcq(id, dto, userId);
   }
 
   @Delete('mcq/:id')
   @ApiOperation({ summary: 'Delete an individual MCQ' })
   @ApiParam({ name: 'id', description: 'MCQ UUID' })
-  async deleteMcq(@Param('id', ParseUUIDPipe) id: string) {
-    return this.questionsService.deleteMcq(id);
+  async deleteMcq(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-user-id') userId?: string,
+  ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    return this.questionsService.deleteMcq(id, userId);
   }
 
   @Post('mcq/:id/regenerate')
@@ -127,8 +154,14 @@ export class QuestionsController {
     description: 'Generates a replacement MCQ, validates with Zod, and replaces the existing record.',
   })
   @ApiParam({ name: 'id', description: 'MCQ UUID' })
-  async regenerateMcq(@Param('id', ParseUUIDPipe) id: string) {
-    return this.questionsService.regenerateMcq(id);
+  async regenerateMcq(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-user-id') userId?: string,
+  ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    return this.questionsService.regenerateMcq(id, userId);
   }
 
   @Patch('cq/:id')
@@ -137,15 +170,25 @@ export class QuestionsController {
   async updateCq(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCqDto,
+    @Headers('x-user-id') userId?: string,
   ) {
-    return this.questionsService.updateCq(id, dto);
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    return this.questionsService.updateCq(id, dto, userId);
   }
 
   @Delete('cq/:id')
   @ApiOperation({ summary: 'Delete an individual Creative Question (CQ)' })
   @ApiParam({ name: 'id', description: 'CQ UUID' })
-  async deleteCq(@Param('id', ParseUUIDPipe) id: string) {
-    return this.questionsService.deleteCq(id);
+  async deleteCq(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-user-id') userId?: string,
+  ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    return this.questionsService.deleteCq(id, userId);
   }
 
   @Post('cq/:id/regenerate')
@@ -155,7 +198,13 @@ export class QuestionsController {
     description: 'Generates a replacement CQ, validates with Zod, and replaces the existing record.',
   })
   @ApiParam({ name: 'id', description: 'CQ UUID' })
-  async regenerateCq(@Param('id', ParseUUIDPipe) id: string) {
-    return this.questionsService.regenerateCq(id);
+  async regenerateCq(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-user-id') userId?: string,
+  ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    return this.questionsService.regenerateCq(id, userId);
   }
 }

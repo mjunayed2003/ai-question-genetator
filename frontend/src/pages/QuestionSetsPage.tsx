@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Layers,
-  Search,
-  Filter,
-  PlusCircle,
-  FileText,
-  Calendar,
-  Trash2,
-  ExternalLink,
-  Download,
-} from 'lucide-react';
+  FiLayers,
+  FiSearch,
+  FiFilter,
+  FiPlus,
+  FiFileText,
+  FiCalendar,
+  FiTrash2,
+  FiArrowRight,
+  FiDownload,
+  FiLock,
+} from 'react-icons/fi';
 import { api } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -26,7 +27,7 @@ export const QuestionSetsPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const { showToast } = useToast();
-  const { user } = useAuth();
+  const { user, loginWithGoogle, isLoggingIn } = useAuth();
 
   // Modals state
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -34,6 +35,14 @@ export const QuestionSetsPage: React.FC = () => {
   const [exportData, setExportData] = useState<{ title: string; text: string } | null>(null);
 
   const fetchQuestionSets = async (targetPage = 1) => {
+    if (!user) {
+      setSets([]);
+      setTotalPages(1);
+      setPage(1);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const res = await api.listQuestionSets(targetPage, 24);
@@ -94,7 +103,7 @@ export const QuestionSetsPage: React.FC = () => {
     const d = (diff || '').toLowerCase();
     if (d === 'easy') return 'badge badge-easy';
     if (d === 'hard') return 'badge-hard';
-    return 'badge-medium';
+    return 'badge badge-medium';
   };
 
   return (
@@ -102,34 +111,34 @@ export const QuestionSetsPage: React.FC = () => {
       {/* Header */}
       <div className="page-header-row">
         <div>
-          <h1 className="page-title">Question Sets Library</h1>
+          <h1 className="page-title">Question Sets</h1>
           <p className="page-subtitle">
             {user
-              ? `Private question sets for ${user.email} • Only you can study, edit, and export them.`
-              : 'Browse, study, customize, and export all generated assessments.'}
+              ? `Workspace for ${user.email} • Private question sets`
+              : 'Browse, practice, and export your private question sets.'}
           </p>
         </div>
         <Link to="/generate" className="btn btn-primary">
-          <PlusCircle size={17} />
-          <span>Generate New Set</span>
+          <FiPlus size={17} />
+          <span>New Set</span>
         </Link>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="filter-bar-row glass-panel">
         <div className="search-input-wrapper">
-          <Search size={18} className="search-icon" />
+          <FiSearch size={18} className="search-icon" />
           <input
             type="text"
             className="search-input"
-            placeholder="Search by topic, keyword, or document..."
+            placeholder="Search sets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
         <div className="filter-group">
-          <Filter size={16} className="text-dim" />
+          <FiFilter size={16} className="text-dim" />
           <select
             className="filter-select"
             value={difficultyFilter}
@@ -149,17 +158,57 @@ export const QuestionSetsPage: React.FC = () => {
           <span className="loading-spinner-lg" />
           <p>Loading question sets...</p>
         </div>
+      ) : !user ? (
+        <div className="empty-state-card glass-panel animate-fade-in" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+          <div
+            style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: 'rgba(217, 119, 6, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem',
+              color: '#d97706',
+            }}
+          >
+            <FiLock size={26} />
+          </div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0 0 0.5rem' }}>
+            Private Assessment Workspace
+          </h3>
+          <p style={{ maxWidth: '460px', margin: '0 auto 1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            Each user's question sets are completely isolated and confidential. Please sign in with Google to view and manage your questions.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={async () => {
+              try {
+                await loginWithGoogle();
+                showToast('Signed in successfully!', 'success');
+              } catch (err: any) {
+                if (err?.message) showToast(err.message, 'error');
+              }
+            }}
+            disabled={isLoggingIn}
+          >
+            <FiLock size={16} />
+            <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google'}</span>
+          </button>
+        </div>
       ) : filteredSets.length === 0 ? (
         <div className="empty-state-card glass-panel">
-          <Layers size={48} className="text-dim" />
-          <h3>No Question Sets Found</h3>
+          <FiLayers size={48} className="text-dim" />
+          <h3>No Sets Found</h3>
           <p>
             {searchQuery || difficultyFilter !== 'all'
               ? 'Try adjusting your filters or search keywords.'
-              : 'Create your very first question set using AI.'}
+              : 'Create your very first question set.'}
           </p>
           <Link to="/generate" className="btn btn-primary mt-3">
-            <PlusCircle size={16} />
+            <FiPlus size={16} />
             <span>Create First Set</span>
           </Link>
         </div>
@@ -172,7 +221,7 @@ export const QuestionSetsPage: React.FC = () => {
             return (
               <div key={set.id} className="set-card glass-panel">
                 <div className="set-card-top">
-                  <span className={`badge ${getDifficultyBadge(set.difficulty)}`}>
+                  <span className={getDifficultyBadge(set.difficulty)}>
                     {set.difficulty}
                   </span>
                   <div className="set-card-actions">
@@ -182,7 +231,7 @@ export const QuestionSetsPage: React.FC = () => {
                       title="Export formatted text"
                       onClick={(e) => handleQuickExport(e, set.id, set.topic || 'Question Set')}
                     >
-                      <Download size={15} />
+                      <FiDownload size={15} />
                     </button>
                     <button
                       type="button"
@@ -190,17 +239,17 @@ export const QuestionSetsPage: React.FC = () => {
                       title="Delete question set"
                       onClick={() => setDeleteTargetId(set.id)}
                     >
-                      <Trash2 size={15} />
+                      <FiTrash2 size={15} />
                     </button>
                   </div>
                 </div>
 
                 <Link to={`/sets/${set.id}`} className="set-card-body">
-                  <h3 className="set-card-title">{set.topic || 'Untitled Question Set'}</h3>
+                  <h3 className="set-card-title">{set.topic || 'Untitled Set'}</h3>
 
                   {set.document && (
                     <div className="set-source-doc">
-                      <FileText size={13} className="text-cyan" />
+                      <FiFileText size={13} className="text-cyan" />
                       <span className="truncate">{set.document.originalName}</span>
                     </div>
                   )}
@@ -220,12 +269,12 @@ export const QuestionSetsPage: React.FC = () => {
 
                 <div className="set-card-footer">
                   <span className="set-date-text">
-                    <Calendar size={13} />
+                    <FiCalendar size={13} />
                     <span>{new Date(set.createdAt).toLocaleDateString()}</span>
                   </span>
                   <Link to={`/sets/${set.id}`} className="set-open-link">
-                    <span>Open Studio</span>
-                    <ExternalLink size={14} />
+                    <span>View Set</span>
+                    <FiArrowRight size={14} />
                   </Link>
                 </div>
               </div>

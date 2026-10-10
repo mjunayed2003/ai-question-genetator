@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UnauthorizedException,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -77,6 +78,9 @@ export class DocumentsController {
     @UploadedFile() file: Express.Multer.File,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to upload documents.');
+    }
     return this.documentsService.processUpload(file, userId);
   }
 
@@ -99,6 +103,9 @@ export class DocumentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to view documents.');
+    }
     return this.documentsService.findById(id, userId);
   }
 
@@ -109,6 +116,9 @@ export class DocumentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('x-user-id') userId?: string,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to delete documents.');
+    }
     return this.documentsService.delete(id, userId);
   }
 }

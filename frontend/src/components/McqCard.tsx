@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { Check, X, Sparkles, Edit3, Trash2, CheckCircle, Lightbulb } from 'lucide-react';
+import {
+  FiCheck,
+  FiX,
+  FiRefreshCw,
+  FiEdit2,
+  FiTrash2,
+  FiCheckCircle,
+  FiHelpCircle,
+} from 'react-icons/fi';
 import type { MCQ } from '../types';
 
 interface McqCardProps {
@@ -62,12 +70,12 @@ export const McqCard: React.FC<McqCardProps> = ({
           <button
             type="button"
             className="icon-action-btn btn-ai"
-            title="Regenerate this MCQ using Gemini AI"
+            title="Regenerate this MCQ"
             disabled={isRegenerating}
             onClick={handleRegenerateClick}
           >
-            <Sparkles size={15} className={isRegenerating ? 'spin-anim text-cyan' : 'text-cyan'} />
-            <span className="action-text">{isRegenerating ? 'Generating...' : 'Regenerate'}</span>
+            <FiRefreshCw size={14} className={isRegenerating ? 'spin-anim' : ''} />
+            <span className="action-text">{isRegenerating ? 'Regenerating...' : 'Regen'}</span>
           </button>
 
           <button
@@ -76,7 +84,7 @@ export const McqCard: React.FC<McqCardProps> = ({
             title="Edit MCQ"
             onClick={() => onEdit(mcq)}
           >
-            <Edit3 size={15} />
+            <FiEdit2 size={14} />
             <span className="action-text">Edit</span>
           </button>
 
@@ -86,7 +94,7 @@ export const McqCard: React.FC<McqCardProps> = ({
             title="Delete MCQ"
             onClick={() => onDelete(mcq.id)}
           >
-            <Trash2 size={15} />
+            <FiTrash2 size={14} />
           </button>
         </div>
       </div>
@@ -123,8 +131,8 @@ export const McqCard: React.FC<McqCardProps> = ({
               <span className="option-text">{opt}</span>
               {selectedOption !== null && (
                 <span className="option-feedback-icon">
-                  {isCorrect && <Check size={16} className="text-emerald" />}
-                  {isSelected && !isCorrect && <X size={16} className="text-rose" />}
+                  {isCorrect && <FiCheck size={16} className="text-emerald" />}
+                  {isSelected && !isCorrect && <FiX size={16} className="text-rose" />}
                 </span>
               )}
             </button>
@@ -139,8 +147,8 @@ export const McqCard: React.FC<McqCardProps> = ({
           className="explanation-toggle-btn"
           onClick={() => setShowExplanation(!showExplanation)}
         >
-          <Lightbulb size={16} className={showExplanation ? 'text-amber' : 'text-dim'} />
-          <span>{showExplanation ? 'Hide Explanation' : 'View Correct Answer & Explanation'}</span>
+          <FiHelpCircle size={15} className={showExplanation ? 'text-amber' : 'text-dim'} />
+          <span>{showExplanation ? 'Hide Explanation' : 'Explanation'}</span>
         </button>
 
         {selectedOption && (
@@ -149,7 +157,7 @@ export const McqCard: React.FC<McqCardProps> = ({
             className="reset-choice-btn"
             onClick={() => setSelectedOption(null)}
           >
-            Reset Choice
+            Reset
           </button>
         )}
       </div>
@@ -158,15 +166,15 @@ export const McqCard: React.FC<McqCardProps> = ({
       {showExplanation && (
         <div className="explanation-box animate-fade-in">
           <div className="explanation-header">
-            <CheckCircle size={15} className="text-emerald" />
+            <FiCheckCircle size={15} className="text-emerald" />
             <span className="correct-answer-label">
-              Correct Answer: <strong>{mcq.answer}</strong>
+              Answer: <strong>{mcq.answer}</strong>
             </span>
           </div>
           {mcq.explanation ? (
             <p className="explanation-body">{mcq.explanation}</p>
           ) : (
-            <p className="explanation-body text-dim italic">No additional explanation provided.</p>
+            <p className="explanation-body text-dim italic">No explanation provided.</p>
           )}
         </div>
       )}

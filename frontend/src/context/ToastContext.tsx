@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { FiCheckCircle, FiAlertCircle, FiInfo, FiAlertTriangle, FiX } from 'react-icons/fi';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -42,13 +42,13 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       {children}
       <div className="toast-container" aria-live="polite">
         {toasts.map((toast) => {
-          let icon = <Info className="toast-icon text-cyan" size={18} />;
+          let icon = <FiInfo className="toast-icon text-cyan" size={18} />;
           if (toast.type === 'success') {
-            icon = <CheckCircle2 className="toast-icon text-emerald" size={18} />;
+            icon = <FiCheckCircle className="toast-icon text-emerald" size={18} />;
           } else if (toast.type === 'error') {
-            icon = <AlertCircle className="toast-icon text-rose" size={18} />;
+            icon = <FiAlertCircle className="toast-icon text-rose" size={18} />;
           } else if (toast.type === 'warning') {
-            icon = <AlertTriangle className="toast-icon text-amber" size={18} />;
+            icon = <FiAlertTriangle className="toast-icon text-amber" size={18} />;
           }
 
           return (
@@ -63,7 +63,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 onClick={() => removeToast(toast.id)}
                 aria-label="Close notification"
               >
-                <X size={15} />
+                <FiX size={15} />
               </button>
             </div>
           );

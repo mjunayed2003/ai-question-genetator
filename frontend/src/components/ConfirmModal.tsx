@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { FiAlertTriangle, FiX } from 'react-icons/fi';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       <div className="modal-dialog glass-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-header-title">
-            {isDangerous && <AlertTriangle className="text-rose" size={20} />}
+            {isDangerous && <FiAlertTriangle className="text-rose" size={20} />}
             <h3>{title}</h3>
           </div>
           <button
@@ -41,7 +41,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             disabled={isLoading}
             aria-label="Close"
           >
-            <X size={18} />
+            <FiX size={18} />
           </button>
         </div>
 

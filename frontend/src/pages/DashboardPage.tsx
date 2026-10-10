@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Sparkles,
-  Layers,
-  FileText,
-  Upload,
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  Lock,
-} from 'lucide-react';
+  FiLayers,
+  FiFileText,
+  FiUploadCloud,
+  FiArrowRight,
+  FiBookOpen,
+  FiCheckCircle,
+  FiLock,
+  FiAward,
+  FiDownload,
+  FiShield,
+  FiSliders,
+} from 'react-icons/fi';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -47,8 +50,20 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-
   const fetchData = async () => {
+    if (!user) {
+      setStats({
+        setsCount: 0,
+        mcqCount: 0,
+        cqCount: 0,
+        docsCount: 0,
+      });
+      setRecentSets([]);
+      setRecentDocs([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const [setsData, docsData] = await Promise.all([
@@ -96,124 +111,208 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="page-container container">
-      {/* Hero Welcome Section */}
-      <section className="dashboard-hero glass-panel">
-        <div className="hero-content">
-          <div className="hero-badge">
-            <Sparkles size={14} className="text-cyan" />
-            <span>
-              {user ? `Private Workspace • ${user.email}` : 'AI-Powered Curriculum Intelligence'}
-            </span>
-          </div>
-          <h1 className="hero-title">
-            {user ? (
-              <>
-                Welcome back, <span className="text-gradient">{user.displayName || 'Scholar'}</span>
-              </>
-            ) : (
-              <>
-                Generate High-Yield <span className="text-gradient">Exam Questions</span> Instantly
-              </>
-            )}
-          </h1>
-          <p className="hero-subtitle">
-            {user
-              ? 'Your uploaded documents and generated question sets are private to your Gmail account. Only you can view and edit them.'
-              : 'Upload course materials or specify any topic to create structured MCQs and Creative Questions aligned with Bloom\'s taxonomy.'}
-          </p>
+      {/* Hero Welcome Section - 2-Row Design (Row 1: Content + Photo, Row 2: Full Width Highlights) */}
+      <section className="dashboard-hero-card glass-panel">
+        <div className="hero-main-row">
+          <div className="hero-content-col">
+            <div className="hero-badge-pill">
+              <FiAward size={14} className="text-amber" />
+              <span>
+                {user
+                  ? `Workspace • ${user.displayName || user.email}`
+                  : 'Verified Questions • Instant Export'}
+              </span>
+            </div>
 
-          <div className="hero-cta-group">
-            <Link to="/generate" className="btn btn-primary">
-              <Sparkles size={18} />
-              <span>Launch Generator Studio</span>
-            </Link>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setIsUploadModalOpen(true)}
-            >
-              <Upload size={18} />
-              <span>Upload Documents</span>
-            </button>
-            {!user && (
+            <h1 className="hero-title-main">
+              Create Exam Papers in Seconds.
+            </h1>
+
+            <p className="hero-subtitle-main">
+              Turn syllabus topics and PDF notes into verified MCQs and Creative Questions aligned with Bloom's taxonomy.
+            </p>
+
+            <div className="hero-cta-group">
+              <Link to="/generate" className="btn btn-primary">
+                <span>Create Questions</span>
+                <FiArrowRight size={17} />
+              </Link>
+
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={handleDirectGoogleLogin}
-                disabled={isLoggingIn}
+                onClick={() => {
+                  if (!user) {
+                    handleDirectGoogleLogin();
+                  } else {
+                    setIsUploadModalOpen(true);
+                  }
+                }}
               >
-                <Lock size={16} />
-                <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google'}</span>
+                <FiUploadCloud size={17} />
+                <span>Upload PDF</span>
               </button>
-            )}
+
+              {!user && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleDirectGoogleLogin}
+                  disabled={isLoggingIn}
+                >
+                  <FiLock size={16} />
+                  <span>{isLoggingIn ? 'Connecting...' : 'Google Sign In'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Hero Visual Card matching Image 2 */}
+          <div className="hero-image-col">
+            <div className="hero-img-card">
+              <img
+                src="/hero-study.jpg"
+                alt="QuestAI Study Workspace"
+                loading="lazy"
+              />
+              <div className="hero-badge-overlay">
+                <span>Assessment Studio ⭐</span>
+              </div>
+              <div className="hero-badge-bottom">
+                <FiCheckCircle size={15} />
+                <span>Curriculum Aligned</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Trust Bar - Full width row across entire card */}
+        <div className="hero-feature-bar">
+          <div className="feature-pill-item">
+            <div className="feature-pill-icon mint">
+              <FiFileText />
+            </div>
+            <div className="feature-pill-text">
+              <strong>PDF & Notes</strong>
+              <span>Extract from books</span>
+            </div>
+          </div>
+
+          <div className="feature-pill-item">
+            <div className="feature-pill-icon amber">
+              <FiCheckCircle />
+            </div>
+            <div className="feature-pill-text">
+              <strong>Bloom's Taxonomy</strong>
+              <span>Standard rubrics</span>
+            </div>
+          </div>
+
+          <div className="feature-pill-item">
+            <div className="feature-pill-icon emerald">
+              <FiShield />
+            </div>
+            <div className="feature-pill-text">
+              <strong>Private Cloud</strong>
+              <span>Secure storage</span>
+            </div>
+          </div>
+
+          <div className="feature-pill-item">
+            <div className="feature-pill-icon blue">
+              <FiDownload />
+            </div>
+            <div className="feature-pill-text">
+              <strong>Instant Export</strong>
+              <span>Print PDF & Word</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Metrics Row */}
+      {/* Metrics Row - Balanced 4 Columns */}
       <section className="stats-grid">
-        <div className="stat-card glass-panel">
+        <div className="stat-card">
           <div className="stat-icon-wrapper stat-icon-indigo">
-            <Layers size={22} />
+            <FiLayers size={22} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{isLoading ? '...' : stats.setsCount}</span>
-            <span className="stat-label">Question Sets</span>
+            <span className="stat-label">Total Sets</span>
           </div>
         </div>
 
-        <div className="stat-card glass-panel">
+        <div className="stat-card">
           <div className="stat-icon-wrapper stat-icon-emerald">
-            <CheckCircle2 size={22} />
+            <FiCheckCircle size={22} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{isLoading ? '...' : stats.mcqCount}</span>
-            <span className="stat-label">MCQs Generated</span>
+            <span className="stat-label">MCQs</span>
           </div>
         </div>
 
-        <div className="stat-card glass-panel">
+        <div className="stat-card">
           <div className="stat-icon-wrapper stat-icon-purple">
-            <BookOpen size={22} />
+            <FiBookOpen size={22} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{isLoading ? '...' : stats.cqCount}</span>
-            <span className="stat-label">CQs Generated</span>
+            <span className="stat-label">Creative Questions</span>
           </div>
         </div>
 
-        <div className="stat-card glass-panel">
+        <div className="stat-card">
           <div className="stat-icon-wrapper stat-icon-cyan">
-            <FileText size={22} />
+            <FiFileText size={22} />
           </div>
           <div className="stat-info">
             <span className="stat-value">{isLoading ? '...' : stats.docsCount}</span>
-            <span className="stat-label">Study Documents</span>
+            <span className="stat-label">Documents</span>
           </div>
         </div>
       </section>
 
-      {/* Split Columns: Recent Sets & Recent Documents */}
+      {/* Split Columns: Recent Sets & Recent Documents (1fr 1fr) */}
       <div className="dashboard-split-layout">
         {/* Recent Question Sets */}
         <div className="split-column glass-panel">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Recent Question Sets</h2>
-              <p className="section-subtitle">Latest question sets crafted by AI</p>
+              <h2 className="section-title">Recent Sets</h2>
+              <p className="section-subtitle">Latest generated question papers</p>
             </div>
             <Link to="/sets" className="link-more">
               <span>View All</span>
-              <ArrowRight size={15} />
+              <FiArrowRight size={15} />
             </Link>
           </div>
 
           <div className="recent-list">
             {isLoading ? (
               <div className="loading-state">Loading question sets...</div>
+            ) : !user ? (
+              <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+                <FiLock size={32} className="text-amber" style={{ margin: '0 auto 0.75rem' }} />
+                <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.25rem' }}>
+                  Private Question Sets
+                </p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 1rem' }}>
+                  Sign in with Google to view and manage your generated assessments.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={handleDirectGoogleLogin}
+                  disabled={isLoggingIn}
+                >
+                  <FiLock size={14} />
+                  <span>Sign In with Google</span>
+                </button>
+              </div>
             ) : recentSets.length === 0 ? (
               <div className="empty-state">
-                <Layers size={36} className="text-dim" />
+                <FiLayers size={36} className="text-dim" />
                 <p>No question sets generated yet.</p>
                 <Link to="/generate" className="btn btn-primary btn-sm">
                   Create First Set
@@ -240,7 +339,7 @@ export const DashboardPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <ArrowRight size={18} className="recent-item-arrow" />
+                  <FiArrowRight size={18} className="recent-item-arrow" />
                 </Link>
               ))
             )}
@@ -251,35 +350,54 @@ export const DashboardPage: React.FC = () => {
         <div className="split-column glass-panel">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Study Materials</h2>
-              <p className="section-subtitle">Uploaded PDFs and textbooks</p>
+              <h2 className="section-title">Documents</h2>
+              <p className="section-subtitle">Uploaded PDF books and study notes</p>
             </div>
             <Link to="/documents" className="link-more">
               <span>View All</span>
-              <ArrowRight size={15} />
+              <FiArrowRight size={15} />
             </Link>
           </div>
 
           <div className="recent-list">
             {isLoading ? (
               <div className="loading-state">Loading documents...</div>
+            ) : !user ? (
+              <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+                <FiLock size={32} className="text-amber" style={{ margin: '0 auto 0.75rem' }} />
+                <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.25rem' }}>
+                  Private Documents
+                </p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 1rem' }}>
+                  Sign in with Google to view and upload study materials securely.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={handleDirectGoogleLogin}
+                  disabled={isLoggingIn}
+                >
+                  <FiLock size={14} />
+                  <span>Sign In with Google</span>
+                </button>
+              </div>
             ) : recentDocs.length === 0 ? (
               <div className="empty-state">
-                <FileText size={36} className="text-dim" />
-                <p>No study materials uploaded yet.</p>
+                <FiFileText size={36} className="text-dim" />
+                <p>No documents uploaded yet.</p>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => setIsUploadModalOpen(true)}
                 >
-                  Upload Material
+                  Upload PDF
                 </button>
               </div>
             ) : (
               recentDocs.map((doc) => (
                 <div key={doc.id} className="recent-doc-row">
                   <div className="doc-icon-box">
-                    <FileText size={18} className="text-cyan" />
+                    <FiFileText size={18} className="text-cyan" />
                   </div>
                   <div className="doc-details">
                     <span className="doc-name" title={doc.originalName}>
@@ -294,7 +412,7 @@ export const DashboardPage: React.FC = () => {
                     className="btn btn-secondary btn-sm"
                     title="Generate questions from this document"
                   >
-                    <Sparkles size={14} className="text-cyan" />
+                    <FiSliders size={14} />
                     <span>Generate</span>
                   </Link>
                 </div>

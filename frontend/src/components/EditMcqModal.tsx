@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+import { FiX, FiCheck } from 'react-icons/fi';
 import type { MCQ, UpdateMcqPayload } from '../types';
 
 interface EditMcqModalProps {
@@ -72,7 +72,7 @@ export const EditMcqModal: React.FC<EditMcqModalProps> = ({
             disabled={isLoading}
             aria-label="Close"
           >
-            <X size={18} />
+            <FiX size={18} />
           </button>
         </div>
 
@@ -175,8 +175,8 @@ export const EditMcqModal: React.FC<EditMcqModalProps> = ({
               className="btn btn-primary"
               disabled={isLoading || !answer.trim()}
             >
-              <Save size={16} />
-              <span>{isLoading ? 'Saving...' : 'Save Changes'}</span>
+              <FiCheck size={16} />
+              <span>{isLoading ? 'Saving...' : 'Save'}</span>
             </button>
           </div>
         </form>

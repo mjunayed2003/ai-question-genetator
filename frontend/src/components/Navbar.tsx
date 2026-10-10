@@ -1,27 +1,84 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
-  Sparkles,
-  Layers,
-  FileText,
-  LayoutDashboard,
-  PlusCircle,
-  Wifi,
-  WifiOff,
-  LogOut,
-  User,
-  ChevronDown,
-} from 'lucide-react';
+  FiBookOpen,
+  FiGrid,
+  FiSliders,
+  FiLayers,
+  FiFileText,
+  FiPlus,
+  FiWifi,
+  FiWifiOff,
+  FiLogOut,
+  FiUser,
+  FiChevronDown,
+  FiMenu,
+  FiX,
+} from 'react-icons/fi';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+// Reusable UserAvatar with no-referrer, crossOrigin, and graceful initials fallback
+const UserAvatar: React.FC<{
+  photoURL?: string | null;
+  name?: string;
+  size?: number;
+}> = ({ photoURL, name, size = 30 }) => {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [photoURL]);
+
+  const initials = (name || 'User')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('');
+
+  if (photoURL && !hasError) {
+    return (
+      <img
+        src={photoURL}
+        alt={name || 'User'}
+        className="user-avatar-img"
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+        onError={() => setHasError(true)}
+        style={{ width: `${size}px`, height: `${size}px` }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="user-avatar-placeholder"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        fontSize: size > 32 ? '0.95rem' : '0.8rem',
+      }}
+    >
+      {initials || <FiUser size={Math.round(size * 0.5)} />}
+    </div>
+  );
+};
 
 export const Navbar: React.FC = () => {
   const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
   const { user, loginWithGoogle, isLoggingIn, isFirebaseConfigured, openLoginModal, logout } = useAuth();
   const { showToast } = useToast();
+
+  // Close mobile drawer when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleDirectGoogleLogin = async () => {
     if (!isFirebaseConfigured) {
@@ -39,7 +96,6 @@ export const Navbar: React.FC = () => {
       }
     }
   };
-
 
   useEffect(() => {
     let mounted = true;
@@ -73,46 +129,46 @@ export const Navbar: React.FC = () => {
         {/* Brand */}
         <Link to="/" className="brand-logo">
           <div className="brand-icon-box">
-            <Sparkles className="brand-icon" size={22} />
+            <FiBookOpen size={20} className="brand-icon" />
           </div>
           <div className="brand-text-container">
             <span className="brand-title">QuestAI</span>
-            <span className="brand-tag">Educational Studio</span>
+            <span className="brand-tag">Studio</span>
           </div>
         </Link>
 
-        {/* Navigation Links */}
+        {/* Desktop Navigation Links */}
         <nav className="nav-links">
           <NavLink
             to="/"
             end
             className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
           >
-            <LayoutDashboard size={17} />
-            <span>Dashboard</span>
+            <FiGrid size={15} />
+            <span>Home</span>
           </NavLink>
 
           <NavLink
             to="/generate"
             className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
           >
-            <Sparkles size={17} />
-            <span>Generate Studio</span>
+            <FiSliders size={15} />
+            <span>Generate</span>
           </NavLink>
 
           <NavLink
             to="/sets"
             className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
           >
-            <Layers size={17} />
-            <span>Question Sets</span>
+            <FiLayers size={15} />
+            <span>Sets</span>
           </NavLink>
 
           <NavLink
             to="/documents"
             className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
           >
-            <FileText size={17} />
+            <FiFileText size={15} />
             <span>Documents</span>
           </NavLink>
         </nav>
@@ -135,12 +191,12 @@ export const Navbar: React.FC = () => {
                 : 'Checking server connection'
             }
           >
-            {isBackendOnline ? <Wifi size={13} /> : <WifiOff size={13} />}
-            <span>{isBackendOnline ? 'API Connected' : 'API Offline'}</span>
+            {isBackendOnline ? <FiWifi size={13} /> : <FiWifiOff size={13} />}
+            <span>{isBackendOnline ? 'Online' : 'Offline'}</span>
           </div>
 
           <Link to="/generate" className="btn btn-primary btn-sm nav-cta">
-            <PlusCircle size={16} />
+            <FiPlus size={15} />
             <span>Create</span>
           </Link>
 
@@ -151,30 +207,32 @@ export const Navbar: React.FC = () => {
                 type="button"
                 className="user-profile-btn"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                aria-label="User Menu"
               >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || 'User'}
-                    className="user-avatar-img"
-                  />
-                ) : (
-                  <div className="user-avatar-placeholder">
-                    {user.displayName ? user.displayName[0].toUpperCase() : <User size={15} />}
-                  </div>
-                )}
+                <UserAvatar
+                  photoURL={user.photoURL}
+                  name={user.displayName || user.email}
+                  size={30}
+                />
                 <span className="user-name-label truncate">
                   {user.displayName || user.email.split('@')[0]}
                 </span>
-                <ChevronDown size={14} className="text-dim" />
+                <FiChevronDown size={14} className="text-dim" />
               </button>
 
               {isUserMenuOpen && (
                 <div className="user-dropdown-menu animate-fade-in">
-                  <div className="dropdown-user-header">
-                    <p className="user-full-name">{user.displayName || 'Student / Educator'}</p>
-                    <p className="user-full-email truncate">{user.email}</p>
-                    <span className="user-workspace-pill">Private Workspace</span>
+                  <div className="dropdown-user-header" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <UserAvatar
+                      photoURL={user.photoURL}
+                      name={user.displayName || user.email}
+                      size={38}
+                    />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p className="user-full-name">{user.displayName || 'Scholar'}</p>
+                      <p className="user-full-email truncate">{user.email}</p>
+                      <span className="user-workspace-pill">Private Workspace</span>
+                    </div>
                   </div>
 
                   <div className="dropdown-divider" />
@@ -184,8 +242,8 @@ export const Navbar: React.FC = () => {
                     className="dropdown-item"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
-                    <Layers size={15} />
-                    <span>My Question Sets</span>
+                    <FiLayers size={15} />
+                    <span>Question Sets</span>
                   </Link>
 
                   <Link
@@ -193,8 +251,8 @@ export const Navbar: React.FC = () => {
                     className="dropdown-item"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
-                    <FileText size={15} />
-                    <span>My Uploaded Files</span>
+                    <FiFileText size={15} />
+                    <span>Documents</span>
                   </Link>
 
                   <div className="dropdown-divider" />
@@ -207,7 +265,7 @@ export const Navbar: React.FC = () => {
                       logout();
                     }}
                   >
-                    <LogOut size={15} />
+                    <FiLogOut size={15} />
                     <span>Sign Out</span>
                   </button>
                 </div>
@@ -239,11 +297,100 @@ export const Navbar: React.FC = () => {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              <span>{isLoggingIn ? 'Connecting...' : 'Sign In with Google'}</span>
+              <span>{isLoggingIn ? 'Connecting...' : 'Google Sign In'}</span>
             </button>
           )}
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            type="button"
+            className="mobile-menu-toggle"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="mobile-nav-drawer animate-fade-in">
+          <div className="mobile-nav-links">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+            >
+              <FiGrid size={18} />
+              <span>Home</span>
+            </NavLink>
+
+            <NavLink
+              to="/generate"
+              className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+            >
+              <FiSliders size={18} />
+              <span>Generate</span>
+            </NavLink>
+
+            <NavLink
+              to="/sets"
+              className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+            >
+              <FiLayers size={18} />
+              <span>Sets</span>
+            </NavLink>
+
+            <NavLink
+              to="/documents"
+              className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+            >
+              <FiFileText size={18} />
+              <span>Documents</span>
+            </NavLink>
+          </div>
+
+          <div className="mobile-nav-footer">
+            <Link to="/generate" className="btn btn-primary w-full">
+              <FiPlus size={16} />
+              <span>Create</span>
+            </Link>
+
+            {user ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
+                  <UserAvatar photoURL={user.photoURL} name={user.displayName || user.email} size={36} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem' }}>{user.displayName || 'Scholar'}</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }} className="truncate">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary w-full text-rose"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    logout();
+                  }}
+                >
+                  <FiLogOut size={15} />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="google-nav-btn btn w-full"
+                onClick={handleDirectGoogleLogin}
+                disabled={isLoggingIn}
+              >
+                <span>{isLoggingIn ? 'Connecting...' : 'Google Sign In'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

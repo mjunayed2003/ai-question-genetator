@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft,
-  Download,
-  Trash2,
-  Edit,
-  FileText,
-  Calendar,
-  Layers,
-  HelpCircle,
-  BookOpen,
-} from 'lucide-react';
+  FiArrowLeft,
+  FiDownload,
+  FiTrash2,
+  FiEdit2,
+  FiFileText,
+  FiCalendar,
+  FiLayers,
+  FiHelpCircle,
+  FiBookOpen,
+  FiLock,
+  FiShield,
+} from 'react-icons/fi';
 import { api } from '../api/client';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { McqCard } from '../components/McqCard';
 import { CqCard } from '../components/CqCard';
 import { EditMcqModal } from '../components/EditMcqModal';
@@ -25,9 +28,11 @@ export const QuestionSetDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user, loginWithGoogle, isLoggingIn } = useAuth();
 
   const [questionSet, setQuestionSet] = useState<QuestionSet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<'unauthorized' | 'forbidden' | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'mcq' | 'cq'>('all');
 
   // Modals state
@@ -50,14 +55,27 @@ export const QuestionSetDetailPage: React.FC = () => {
 
   const fetchSet = async () => {
     if (!id) return;
+    if (!user) {
+      setAuthError('unauthorized');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
+      setAuthError(null);
       const data = await api.getQuestionSet(id);
       setQuestionSet(data);
       setEditTopic(data.topic || '');
       setEditDifficulty(data.difficulty || 'medium');
     } catch (err: any) {
-      showToast(err.message || 'Failed to load question set', 'error');
+      if (err?.statusCode === 401 || err?.message?.toLowerCase().includes('sign in')) {
+        setAuthError('unauthorized');
+      } else if (err?.statusCode === 403 || err?.message?.toLowerCase().includes('permission')) {
+        setAuthError('forbidden');
+      } else {
+        showToast(err.message || 'Failed to load question set', 'error');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +83,7 @@ export const QuestionSetDetailPage: React.FC = () => {
 
   useEffect(() => {
     fetchSet();
-  }, [id]);
+  }, [id, user]);
 
   // Handle Export
   const handleOpenExport = async () => {
@@ -243,7 +261,86 @@ export const QuestionSetDetailPage: React.FC = () => {
       <div className="page-container container">
         <div className="loading-state-box">
           <span className="loading-spinner-lg" />
-          <p>Loading question set and AI assessments...</p>
+          <p>Loading question set...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authError === 'unauthorized' || (!user && !questionSet)) {
+    return (
+      <div className="page-container container text-center">
+        <div className="empty-state-card glass-panel animate-fade-in" style={{ padding: '3rem 1.5rem', maxWidth: '520px', margin: '2rem auto' }}>
+          <div
+            style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: 'rgba(217, 119, 6, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem',
+              color: '#d97706',
+            }}
+          >
+            <FiLock size={26} />
+          </div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0 0 0.5rem' }}>
+            Sign In Required
+          </h3>
+          <p style={{ margin: '0 0 1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            Question sets are private to each user. Please sign in with Google to view this assessment.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={async () => {
+              try {
+                await loginWithGoogle();
+                showToast('Signed in successfully!', 'success');
+              } catch (err: any) {
+                if (err?.message) showToast(err.message, 'error');
+              }
+            }}
+            disabled={isLoggingIn}
+          >
+            <FiLock size={16} />
+            <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google'}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (authError === 'forbidden') {
+    return (
+      <div className="page-container container text-center">
+        <div className="empty-state-card glass-panel animate-fade-in" style={{ padding: '3rem 1.5rem', maxWidth: '520px', margin: '2rem auto' }}>
+          <div
+            style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem',
+              color: '#ef4444',
+            }}
+          >
+            <FiShield size={26} />
+          </div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0 0 0.5rem' }}>
+            Private Assessment • Access Restricted
+          </h3>
+          <p style={{ margin: '0 0 1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            This question set belongs to another user. User assessments are strictly confidential.
+          </p>
+          <Link to="/sets" className="btn btn-primary">
+            Back to Your Question Sets
+          </Link>
         </div>
       </div>
     );
@@ -253,11 +350,11 @@ export const QuestionSetDetailPage: React.FC = () => {
     return (
       <div className="page-container container text-center">
         <div className="empty-state-card glass-panel">
-          <Layers size={48} className="text-dim" />
+          <FiLayers size={48} className="text-dim" />
           <h3>Question Set Not Found</h3>
           <p>This question set may have been deleted or the link is invalid.</p>
           <Link to="/sets" className="btn btn-primary mt-3">
-            Back to Catalog
+            Back to Sets
           </Link>
         </div>
       </div>
@@ -272,7 +369,7 @@ export const QuestionSetDetailPage: React.FC = () => {
     const d = (diff || '').toLowerCase();
     if (d === 'easy') return 'badge badge-easy';
     if (d === 'hard') return 'badge-hard';
-    return 'badge-medium';
+    return 'badge badge-medium';
   };
 
   return (
@@ -280,8 +377,8 @@ export const QuestionSetDetailPage: React.FC = () => {
       {/* Top Breadcrumb & Actions Bar */}
       <div className="detail-top-nav">
         <Link to="/sets" className="back-link">
-          <ArrowLeft size={16} />
-          <span>Back to Question Sets</span>
+          <FiArrowLeft size={16} />
+          <span>Back to Sets</span>
         </Link>
 
         <div className="detail-action-buttons">
@@ -290,8 +387,8 @@ export const QuestionSetDetailPage: React.FC = () => {
             className="btn btn-secondary btn-sm"
             onClick={() => setIsEditMetaOpen(true)}
           >
-            <Edit size={14} />
-            <span>Edit Title</span>
+            <FiEdit2 size={14} />
+            <span>Edit</span>
           </button>
 
           <button
@@ -299,8 +396,8 @@ export const QuestionSetDetailPage: React.FC = () => {
             className="btn btn-primary btn-sm"
             onClick={handleOpenExport}
           >
-            <Download size={14} />
-            <span>Export & Print</span>
+            <FiDownload size={14} />
+            <span>Export</span>
           </button>
 
           <button
@@ -308,8 +405,8 @@ export const QuestionSetDetailPage: React.FC = () => {
             className="btn btn-danger btn-sm"
             onClick={() => setDeleteSetConfirm(true)}
           >
-            <Trash2 size={14} />
-            <span>Delete Set</span>
+            <FiTrash2 size={14} />
+            <span>Delete</span>
           </button>
         </div>
       </div>
@@ -318,31 +415,31 @@ export const QuestionSetDetailPage: React.FC = () => {
       <div className="set-hero-banner glass-panel">
         <div className="set-hero-main">
           <div className="set-meta-badges">
-            <span className={`badge ${getDifficultyBadge(questionSet.difficulty)}`}>
+            <span className={getDifficultyBadge(questionSet.difficulty)}>
               {questionSet.difficulty}
             </span>
             <span className="badge badge-purple">{questionSet.language}</span>
             {questionSet.document && (
               <span className="badge badge-cyan" title="Source Document">
-                <FileText size={12} />
+                <FiFileText size={12} />
                 <span>{questionSet.document.originalName}</span>
               </span>
             )}
           </div>
 
-          <h1 className="set-hero-title">{questionSet.topic || 'Untitled Question Set'}</h1>
+          <h1 className="set-hero-title">{questionSet.topic || 'Untitled Set'}</h1>
 
           <div className="set-hero-details">
             <span className="detail-meta-item">
-              <Layers size={14} className="text-dim" />
-              <span>{mcqs.length} Multiple Choice</span>
+              <FiLayers size={14} className="text-dim" />
+              <span>{mcqs.length} MCQs</span>
             </span>
             <span className="detail-meta-item">
-              <BookOpen size={14} className="text-dim" />
-              <span>{cqs.length} Creative Questions</span>
+              <FiBookOpen size={14} className="text-dim" />
+              <span>{cqs.length} CQs</span>
             </span>
             <span className="detail-meta-item">
-              <Calendar size={14} className="text-dim" />
+              <FiCalendar size={14} className="text-dim" />
               <span>Created {new Date(questionSet.createdAt).toLocaleDateString()}</span>
             </span>
           </div>
@@ -357,7 +454,7 @@ export const QuestionSetDetailPage: React.FC = () => {
             className={`filter-tab-btn ${activeTab === 'all' ? 'filter-tab-active' : ''}`}
             onClick={() => setActiveTab('all')}
           >
-            All Questions ({totalQuestions})
+            All ({totalQuestions})
           </button>
           <button
             type="button"
@@ -371,7 +468,7 @@ export const QuestionSetDetailPage: React.FC = () => {
             className={`filter-tab-btn ${activeTab === 'cq' ? 'filter-tab-active' : ''}`}
             onClick={() => setActiveTab('cq')}
           >
-            Creative Questions ({cqs.length})
+            Creative ({cqs.length})
           </button>
         </div>
       </div>
@@ -380,7 +477,7 @@ export const QuestionSetDetailPage: React.FC = () => {
       <div className="questions-stream">
         {totalQuestions === 0 ? (
           <div className="empty-state-card glass-panel">
-            <HelpCircle size={40} className="text-dim" />
+            <FiHelpCircle size={40} className="text-dim" />
             <h3>No questions in this set</h3>
             <p>You can generate a new set from the studio.</p>
             <Link to="/generate" className="btn btn-primary mt-2">
@@ -393,7 +490,7 @@ export const QuestionSetDetailPage: React.FC = () => {
         {(activeTab === 'all' || activeTab === 'mcq') && mcqs.length > 0 && (
           <section className="section-group">
             <div className="group-header">
-              <h2 className="group-title">Section A: Multiple Choice Questions</h2>
+              <h2 className="group-title">Section A: MCQs</h2>
               <span className="group-count">{mcqs.length} Questions</span>
             </div>
             <div className="questions-list">

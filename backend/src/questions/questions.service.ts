@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AiService } from '../ai/ai.service.js';
@@ -25,10 +26,14 @@ export class QuestionsService {
    * Generates questions using AI and persists the QuestionSet, MCQs, and CQs in PostgreSQL.
    */
   async generateAndSave(dto: GenerateQuestionsDto, userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to generate questions.');
+    }
+
     let sourceText = '';
     let documentTitle = '';
 
-    // If documentId is provided, verify and retrieve document content
+    // If documentId is provided, verify ownership and retrieve document content
     if (dto.documentId) {
       const document = await this.prisma.document.findUnique({
         where: { id: dto.documentId },
@@ -38,7 +43,7 @@ export class QuestionsService {
         throw new NotFoundException(`Document with ID "${dto.documentId}" not found.`);
       }
 
-      if (userId && document.userId && document.userId !== userId) {
+      if (document.userId && document.userId !== userId) {
         throw new ForbiddenException('You do not have permission to use this document.');
       }
 
@@ -66,7 +71,7 @@ export class QuestionsService {
     const questionSet = await this.prisma.$transaction(async (tx) => {
       const qSet = await tx.questionSet.create({
         data: {
-          userId: userId || null,
+          userId,
           documentId: dto.documentId || null,
           topic: dto.topic || documentTitle || 'Generated Question Set',
           language: dto.language || 'English',
@@ -111,14 +116,26 @@ export class QuestionsService {
       return qSet;
     });
 
-    this.logger.log(`Saved QuestionSet "${questionSet.id}" to database with ${generated.mcqs.length} MCQs and ${generated.cqs.length} CQs.`);
+    this.logger.log(`Saved QuestionSet "${questionSet.id}" to database for user "${userId}" with ${generated.mcqs.length} MCQs and ${generated.cqs.length} CQs.`);
 
-    return this.getQuestionSetById(questionSet.id);
+    return this.getQuestionSetById(questionSet.id, userId);
   }
 
   async listQuestionSets(page = 1, limit = 20, userId?: string) {
+    if (!userId) {
+      return {
+        questionSets: [],
+        pagination: {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+        },
+      };
+    }
+
     const skip = (page - 1) * limit;
-    const where = userId ? { userId } : {};
+    const where = { userId };
 
     const [questionSets, total] = await Promise.all([
       this.prisma.questionSet.findMany({
@@ -157,6 +174,10 @@ export class QuestionsService {
   }
 
   async getQuestionSetById(id: string, userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to view question sets.');
+    }
+
     const questionSet = await this.prisma.questionSet.findUnique({
       where: { id },
       include: {
@@ -180,7 +201,7 @@ export class QuestionsService {
       throw new NotFoundException(`Question set with ID "${id}" not found.`);
     }
 
-    if (userId && questionSet.userId && questionSet.userId !== userId) {
+    if (questionSet.userId && questionSet.userId !== userId) {
       throw new ForbiddenException('You do not have permission to view this question set.');
     }
 
@@ -206,10 +227,17 @@ export class QuestionsService {
     return { message: `Question set "${id}" and its questions were deleted successfully.` };
   }
 
-  async updateMcq(id: string, dto: UpdateMcqDto) {
-    const mcq = await this.prisma.mCQ.findUnique({ where: { id } });
+  async updateMcq(id: string, dto: UpdateMcqDto, userId?: string) {
+    const mcq = await this.prisma.mCQ.findUnique({
+      where: { id },
+      include: { questionSet: true },
+    });
     if (!mcq) {
       throw new NotFoundException(`MCQ with ID "${id}" not found.`);
+    }
+
+    if (userId && mcq.questionSet.userId && mcq.questionSet.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to modify this MCQ.');
     }
 
     return this.prisma.mCQ.update({
@@ -224,10 +252,17 @@ export class QuestionsService {
     });
   }
 
-  async deleteMcq(id: string) {
-    const mcq = await this.prisma.mCQ.findUnique({ where: { id } });
+  async deleteMcq(id: string, userId?: string) {
+    const mcq = await this.prisma.mCQ.findUnique({
+      where: { id },
+      include: { questionSet: true },
+    });
     if (!mcq) {
       throw new NotFoundException(`MCQ with ID "${id}" not found.`);
+    }
+
+    if (userId && mcq.questionSet.userId && mcq.questionSet.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to delete this MCQ.');
     }
 
     await this.prisma.$transaction([
@@ -241,10 +276,17 @@ export class QuestionsService {
     return { message: `MCQ "${id}" deleted successfully.` };
   }
 
-  async updateCq(id: string, dto: UpdateCqDto) {
-    const cq = await this.prisma.cQ.findUnique({ where: { id } });
+  async updateCq(id: string, dto: UpdateCqDto, userId?: string) {
+    const cq = await this.prisma.cQ.findUnique({
+      where: { id },
+      include: { questionSet: true },
+    });
     if (!cq) {
       throw new NotFoundException(`CQ with ID "${id}" not found.`);
+    }
+
+    if (userId && cq.questionSet.userId && cq.questionSet.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to modify this CQ.');
     }
 
     return this.prisma.cQ.update({
@@ -260,10 +302,17 @@ export class QuestionsService {
     });
   }
 
-  async deleteCq(id: string) {
-    const cq = await this.prisma.cQ.findUnique({ where: { id } });
+  async deleteCq(id: string, userId?: string) {
+    const cq = await this.prisma.cQ.findUnique({
+      where: { id },
+      include: { questionSet: true },
+    });
     if (!cq) {
       throw new NotFoundException(`CQ with ID "${id}" not found.`);
+    }
+
+    if (userId && cq.questionSet.userId && cq.questionSet.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to delete this CQ.');
     }
 
     await this.prisma.$transaction([
@@ -280,7 +329,7 @@ export class QuestionsService {
   /**
    * Regenerates a single MCQ using original source context and replaces it in the database.
    */
-  async regenerateMcq(id: string) {
+  async regenerateMcq(id: string, userId?: string) {
     const existingMcq = await this.prisma.mCQ.findUnique({
       where: { id },
       include: {
@@ -294,6 +343,10 @@ export class QuestionsService {
 
     if (!existingMcq) {
       throw new NotFoundException(`MCQ with ID "${id}" not found.`);
+    }
+
+    if (userId && existingMcq.questionSet.userId && existingMcq.questionSet.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to modify this MCQ.');
     }
 
     const { questionSet } = existingMcq;
@@ -329,7 +382,7 @@ export class QuestionsService {
   /**
    * Regenerates a single CQ using original source context and replaces it in the database.
    */
-  async regenerateCq(id: string) {
+  async regenerateCq(id: string, userId?: string) {
     const existingCq = await this.prisma.cQ.findUnique({
       where: { id },
       include: {
@@ -343,6 +396,10 @@ export class QuestionsService {
 
     if (!existingCq) {
       throw new NotFoundException(`CQ with ID "${id}" not found.`);
+    }
+
+    if (userId && existingCq.questionSet.userId && existingCq.questionSet.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to modify this CQ.');
     }
 
     const { questionSet } = existingCq;
@@ -379,8 +436,8 @@ export class QuestionsService {
   /**
    * Exports a question set formatted for printing, PDF, or text distribution.
    */
-  async exportQuestionSet(id: string) {
-    const questionSet = await this.getQuestionSetById(id);
+  async exportQuestionSet(id: string, userId?: string) {
+    const questionSet = await this.getQuestionSetById(id, userId);
 
     let plainText = `=================================================\n`;
     plainText += `QUESTION SET: ${questionSet.topic || 'Untitled'}\n`;

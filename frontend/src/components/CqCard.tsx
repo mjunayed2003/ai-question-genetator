@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Edit3, Trash2, FileText } from 'lucide-react';
+import { FiRefreshCw, FiEdit2, FiTrash2, FiFileText } from 'react-icons/fi';
 import type { CQ } from '../types';
 
 interface CqCardProps {
@@ -44,19 +44,19 @@ export const CqCard: React.FC<CqCardProps> = ({
           <span className={`badge ${getDifficultyClass(cq.difficulty)}`}>
             {cq.difficulty}
           </span>
-          <span className="badge badge-purple">10 Marks Total</span>
+          <span className="badge badge-purple">10 Marks</span>
         </div>
 
         <div className="card-actions">
           <button
             type="button"
             className="icon-action-btn btn-ai"
-            title="Regenerate this Creative Question using Gemini AI"
+            title="Regenerate this Creative Question"
             disabled={isRegenerating}
             onClick={handleRegenerateClick}
           >
-            <Sparkles size={15} className={isRegenerating ? 'spin-anim text-cyan' : 'text-cyan'} />
-            <span className="action-text">{isRegenerating ? 'Regenerating...' : 'Regenerate'}</span>
+            <FiRefreshCw size={14} className={isRegenerating ? 'spin-anim' : ''} />
+            <span className="action-text">{isRegenerating ? 'Regenerating...' : 'Regen'}</span>
           </button>
 
           <button
@@ -65,7 +65,7 @@ export const CqCard: React.FC<CqCardProps> = ({
             title="Edit CQ"
             onClick={() => onEdit(cq)}
           >
-            <Edit3 size={15} />
+            <FiEdit2 size={14} />
             <span className="action-text">Edit</span>
           </button>
 
@@ -75,7 +75,7 @@ export const CqCard: React.FC<CqCardProps> = ({
             title="Delete CQ"
             onClick={() => onDelete(cq.id)}
           >
-            <Trash2 size={15} />
+            <FiTrash2 size={14} />
           </button>
         </div>
       </div>
@@ -83,8 +83,8 @@ export const CqCard: React.FC<CqCardProps> = ({
       {/* Stimulus Box */}
       <div className="cq-stimulus-box">
         <div className="stimulus-title">
-          <FileText size={15} className="text-cyan" />
-          <span>Stimulus / Context Scenario</span>
+          <FiFileText size={15} className="text-cyan" />
+          <span>Stimulus</span>
         </div>
         <p className="stimulus-text">{cq.stimulus}</p>
       </div>

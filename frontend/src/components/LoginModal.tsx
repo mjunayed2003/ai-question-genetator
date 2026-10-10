@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { X, Lock, ShieldCheck, Mail, ArrowRight, Copy, Check, AlertTriangle, ExternalLink } from 'lucide-react';
+import {
+  FiX,
+  FiLock,
+  FiShield,
+  FiMail,
+  FiArrowRight,
+  FiCopy,
+  FiCheck,
+  FiAlertTriangle,
+  FiExternalLink,
+} from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -67,7 +77,7 @@ VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456`;
       <div className="modal-dialog glass-panel" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-header-title">
-            <Lock className="text-cyan" size={20} />
+            <FiLock className="text-cyan" size={20} />
             <h3>Google / Firebase Sign In</h3>
           </div>
           <button
@@ -76,13 +86,13 @@ VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456`;
             onClick={closeLoginModal}
             aria-label="Close"
           >
-            <X size={18} />
+            <FiX size={18} />
           </button>
         </div>
 
         <div className="modal-body">
           <div className="auth-privacy-banner">
-            <ShieldCheck size={20} className="text-emerald flex-shrink-0" />
+            <FiShield size={20} className="text-emerald flex-shrink-0" />
             <div>
               <p className="privacy-title">Private Workspace Guarantee</p>
               <p className="privacy-desc">
@@ -124,7 +134,7 @@ VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456`;
           {!isFirebaseConfigured && (
             <div className="firebase-guide-box mt-4">
               <div className="firebase-guide-header">
-                <AlertTriangle size={18} className="text-amber" />
+                <FiAlertTriangle size={18} className="text-amber" />
                 <span className="font-semibold text-amber">Firebase Credentials Needed in frontend/.env</span>
               </div>
               <p className="firebase-guide-desc">
@@ -133,7 +143,7 @@ VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456`;
 
               <ol className="firebase-steps-list">
                 <li>
-                  Open <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-cyan inline-flex items-center gap-1">Firebase Console <ExternalLink size={12} /></a>
+                  Open <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-cyan inline-flex items-center gap-1">Firebase Console <FiExternalLink size={12} /></a>
                 </li>
                 <li>Go to <strong>Project Settings &gt; General &gt; Your apps &gt; Web app</strong> and copy the config.</li>
                 <li>In Firebase Console, go to <strong>Authentication &gt; Sign-in method</strong> and enable <strong>Google</strong>.</li>
@@ -146,7 +156,7 @@ VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456`;
                   onClick={copyEnvTemplate}
                   className="btn btn-sm btn-secondary flex items-center gap-1.5"
                 >
-                  {hasCopied ? <Check size={14} className="text-emerald" /> : <Copy size={14} />}
+                  {hasCopied ? <FiCheck size={14} className="text-emerald" /> : <FiCopy size={14} />}
                   <span>{hasCopied ? 'Copied Template!' : 'Copy .env Template'}</span>
                 </button>
               </div>
@@ -161,7 +171,7 @@ VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456`;
           <form onSubmit={handleCustomLogin} className="quick-gmail-form">
             <div className="form-group mb-3">
               <label className="form-label">
-                <Mail size={15} />
+                <FiMail size={15} />
                 <span>Email Address</span>
               </label>
               <input
@@ -191,7 +201,7 @@ VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456`;
               disabled={isLoggingIn || !customEmail.trim()}
             >
               <span>Continue with Local Test Session</span>
-              <ArrowRight size={16} />
+              <FiArrowRight size={16} />
             </button>
           </form>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, Download, Printer } from 'lucide-react';
+import { FiX, FiCopy, FiCheck, FiDownload, FiPrinter } from 'react-icons/fi';
 import { useToast } from '../context/ToastContext';
 
 interface ExportModalProps {
@@ -78,8 +78,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       <div className="modal-dialog modal-lg glass-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <h3>Export Question Set</h3>
-            <p className="modal-subtitle">Formatted for printing, exams, or homework sheets</p>
+            <h3>Export Questions</h3>
+            <p className="modal-subtitle">Formatted for printing and study sheets</p>
           </div>
           <button
             type="button"
@@ -87,7 +87,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             onClick={onClose}
             aria-label="Close"
           >
-            <X size={18} />
+            <FiX size={18} />
           </button>
         </div>
 
@@ -99,18 +99,18 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         <div className="modal-footer">
           <button type="button" className="btn btn-secondary" onClick={handleCopy}>
-            {copied ? <Check size={16} className="text-emerald" /> : <Copy size={16} />}
-            <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
+            {copied ? <FiCheck size={16} className="text-emerald" /> : <FiCopy size={16} />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
 
           <button type="button" className="btn btn-secondary" onClick={handlePrint}>
-            <Printer size={16} />
-            <span>Print View</span>
+            <FiPrinter size={16} />
+            <span>Print</span>
           </button>
 
           <button type="button" className="btn btn-primary" onClick={handleDownload}>
-            <Download size={16} />
-            <span>Download .txt</span>
+            <FiDownload size={16} />
+            <span>Download</span>
           </button>
         </div>
       </div>

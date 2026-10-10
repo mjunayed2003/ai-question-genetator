@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -27,7 +28,11 @@ export class DocumentsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async processUpload(file: Express.Multer.File, userId?: string) {
+  async processUpload(file: Express.Multer.File, userId: string) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to upload documents.');
+    }
+
     if (!file) {
       throw new BadRequestException('No file provided. Please attach a file.');
     }
@@ -44,10 +49,10 @@ export class DocumentsService {
       );
     }
 
-    // 1. Create document record with status UPLOADED and associate userId if present
+    // 1. Create document record associated strictly with userId
     const document = await this.prisma.document.create({
       data: {
-        userId: userId || null,
+        userId,
         originalName: file.originalname,
         fileName: file.filename,
         filePath: file.path,
@@ -122,8 +127,21 @@ export class DocumentsService {
   }
 
   async findAll(page = 1, limit = 20, userId?: string) {
+    // If not signed in, return zero documents
+    if (!userId) {
+      return {
+        documents: [],
+        pagination: {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+        },
+      };
+    }
+
     const skip = (page - 1) * limit;
-    const where = userId ? { userId } : {};
+    const where = { userId };
 
     const [documents, total] = await Promise.all([
       this.prisma.document.findMany({
@@ -158,6 +176,10 @@ export class DocumentsService {
   }
 
   async findById(id: string, userId?: string) {
+    if (!userId) {
+      throw new UnauthorizedException('Authentication required. Please sign in to view this document.');
+    }
+
     const document = await this.prisma.document.findUnique({
       where: { id },
       include: {
@@ -177,7 +199,7 @@ export class DocumentsService {
       throw new NotFoundException(`Document with ID "${id}" not found.`);
     }
 
-    if (userId && document.userId && document.userId !== userId) {
+    if (document.userId && document.userId !== userId) {
       throw new ForbiddenException('You do not have access to view this document.');
     }
 

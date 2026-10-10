@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { X, UploadCloud, FileText } from 'lucide-react';
+import { FiX, FiUploadCloud, FiFileText, FiLock } from 'react-icons/fi';
 import { api } from '../api/client';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import type { Document } from '../types';
 
 interface DocumentUploadModalProps {
@@ -23,6 +24,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
+  const { user, loginWithGoogle, isLoggingIn } = useAuth();
 
   if (!isOpen) return null;
 
@@ -38,11 +40,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
   const validateAndSetFile = (file: File) => {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      showToast('Unsupported file type. Please upload a PDF or image (PNG, JPG, WEBP).', 'error');
+      showToast('Unsupported file type. Please upload a PDF or image.', 'error');
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      showToast('File size exceeds the 15MB limit.', 'error');
+      showToast('File size exceeds 15MB limit.', 'error');
       return;
     }
     setSelectedFile(file);
@@ -64,6 +66,10 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   };
 
   const handleUpload = async () => {
+    if (!user) {
+      showToast('Please sign in to upload documents.', 'error');
+      return;
+    }
     if (!selectedFile) return;
 
     try {
@@ -90,8 +96,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       <div className="modal-dialog glass-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <h3>Upload Educational Material</h3>
-            <p className="modal-subtitle">Upload a syllabus, textbook chapter, or exam notes (PDF or Image)</p>
+            <h3>Upload PDF</h3>
+            <p className="modal-subtitle">Textbook chapter or study notes (PDF, Image)</p>
           </div>
           <button
             type="button"
@@ -100,53 +106,97 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             disabled={isUploading}
             aria-label="Close"
           >
-            <X size={18} />
+            <FiX size={18} />
           </button>
         </div>
 
         <div className="modal-body">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,image/png,image/jpeg,image/jpg,image/webp"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-
-          {!selectedFile ? (
-            <div
-              className={`dropzone-box ${dragActive ? 'dropzone-active' : ''}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="dropzone-icon">
-                <UploadCloud size={40} className="text-cyan" />
+          {!user ? (
+            <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+              <div
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: 'rgba(217, 119, 6, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem',
+                  color: '#d97706',
+                }}
+              >
+                <FiLock size={24} />
               </div>
-              <p className="dropzone-title">Drag & drop your file here, or click to browse</p>
-              <p className="dropzone-hint">Supports PDF, PNG, JPG, JPEG, WEBP (Max 15MB)</p>
-            </div>
-          ) : (
-            <div className="selected-file-card glass-panel">
-              <div className="file-info-group">
-                <FileText size={28} className="text-cyan" />
-                <div className="file-name-meta">
-                  <span className="file-name-text">{selectedFile.name}</span>
-                  <span className="file-size-text">{formatFileSize(selectedFile.size)}</span>
-                </div>
-              </div>
+              <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 600 }}>
+                Sign In Required
+              </h4>
+              <p style={{ margin: '0 0 1.25rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                Your study materials remain strictly private. Sign in with Google to upload files and generate questions.
+              </p>
               <button
                 type="button"
-                className="btn-remove-file"
-                onClick={() => setSelectedFile(null)}
-                disabled={isUploading}
-                title="Remove file"
+                className="btn btn-primary"
+                onClick={async () => {
+                  try {
+                    await loginWithGoogle();
+                    showToast('Signed in successfully!', 'success');
+                  } catch (err: any) {
+                    if (err?.message) showToast(err.message, 'error');
+                  }
+                }}
+                disabled={isLoggingIn}
               >
-                <X size={16} />
+                <FiLock size={16} />
+                <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google'}</span>
               </button>
             </div>
+          ) : (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,image/png,image/jpeg,image/jpg,image/webp"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+
+              {!selectedFile ? (
+                <div
+                  className={`dropzone-box ${dragActive ? 'dropzone-active' : ''}`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="dropzone-icon">
+                    <FiUploadCloud size={40} className="text-cyan" />
+                  </div>
+                  <p className="dropzone-title">Drag & drop your file here, or click to browse</p>
+                  <p className="dropzone-hint">Supports PDF, PNG, JPG (Max 15MB)</p>
+                </div>
+              ) : (
+                <div className="selected-file-card glass-panel">
+                  <div className="file-info-group">
+                    <FiFileText size={28} className="text-cyan" />
+                    <div className="file-name-meta">
+                      <span className="file-name-text">{selectedFile.name}</span>
+                      <span className="file-size-text">{formatFileSize(selectedFile.size)}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-remove-file"
+                    onClick={() => setSelectedFile(null)}
+                    disabled={isUploading}
+                    title="Remove file"
+                  >
+                    <FiX size={16} />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -159,24 +209,26 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           >
             Cancel
           </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleUpload}
-            disabled={!selectedFile || isUploading}
-          >
-            {isUploading ? (
-              <>
-                <span className="loading-spinner-sm" />
-                <span>Processing & Uploading...</span>
-              </>
-            ) : (
-              <>
-                <UploadCloud size={16} />
-                <span>Upload Document</span>
-              </>
-            )}
-          </button>
+          {user && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleUpload}
+              disabled={!selectedFile || isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <span className="loading-spinner-sm" />
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <FiUploadCloud size={16} />
+                  <span>Upload</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
